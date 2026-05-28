@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poker Boost Mobile - α Version</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --container-bg: #121722;
+            --card-bg: #1a2232;
+            --accent-color: #00ffcc;
+            --text-color: #ffffff;
+            --text-muted: #64748b;
+            --border-color: #2e3d56;
+            --danger-color: #ff3366;
+            --warning-color: #ffcc00;
+            --prize-color: #ff9900;
+            --gear-color: #a855f7;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            width: 100%;
+            background-color: var(--container-bg);
+            border-bottom: 2px solid var(--accent-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 20px;
+            letter-spacing: 2px;
+            font-weight: 800;
+            text-shadow: 0 0 8px rgba(0,255,204,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .app-page {
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
+            padding: 20px;
+            display: none;
+        }
+
+        .app-page.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 14px;
+            background-color: #0b0e14;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(0,255,204,0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-color);
+            color: #0b0e14;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,255,204,0.2);
+        }
+
+        button.secondary {
+            background-color: #2e3d56;
+            border: 1px solid #475d82;
+            color: #fff;
+            box-shadow: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 14px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: rgba(0, 255, 204, 0.05);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge.success { background-color: rgba(0, 255, 204, 0.15); color: var(--accent-color); box-shadow: 0 0 5px rgba(0,255,204,0.3); }
+        .badge.none { background-color: #2e3d56; color: var(--text-muted); }
+
+        .action-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            width: auto;
+            display: inline-block;
+            margin-right: 2px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .action-btn.edit { background-color: var(--warning-color); color: #000; }
+        .action-btn.delete { background-color: var(--danger-color); color: #fff; }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background-color: rgba(18, 23, 34, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 600;
+            background: none;
+            border: none;
+            padding: 0;
+            height: 100%;
+        }
+
+        .tab-item.active {
+            color: var(--accent-color);
+            text-shadow: 0 0 5px rgba(0,255,204,0.4);
+        }
+
+        .tab-item.prize-tab.active {
+            color: var(--prize-color);
+            text-shadow: 0 0 5px rgba(255,153,0,0.4);
+        }
+
+        .tab-item.gear-tab.active {
+            color: var(--gear-color);
+            text-shadow: 0 0 5px rgba(168,85,247,0.4);
+        }
+
+        .tab-icon {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .live-status {
+            text-align: center;
+            font-size: 12px;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .result-box {
+            background: rgba(255, 153, 0, 0.05);
+            border: 1px dashed var(--prize-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        .result-title {
+            color: var(--prize-color);
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .master-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .master-row input {
+            padding: 8px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .master-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKe7D1PTo1RjpmiwXEZLy59GS2Pcl-f7o",
+            authDomain: "poker-boost.firebaseapp.com",
+            databaseURL: "https://poker-boost-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "poker-boost",
+            storageBucket: "poker-boost.firebasestorage.app",
+            messagingSenderId: "992006646965",
+            appId: "1:992006646965:web:0f67d46d1b1a79895a22fc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.players = [];
+        window.logs = [];
+        window.prizeConfig = {};
+        window.customMaster = null;
+
+        window.DEFAULT_MASTER = [
+            { min: 100, max: 999, rank1: 12000, rank2: 7000, rank3: 5000 },
+            { min: 90,  max: 99,  rank1: 10800, rank2: 6300, rank3: 4500 },
+            { min: 80,  max: 89,  rank1: 9600,  rank2: 5600, rank3: 4000 },
+            { min: 70,  max: 79,  rank1: 8400,  rank2: 4900, rank3: 3500 },
+            { min: 60,  max: 69,  rank1: 7200,  rank2: 4200, rank3: 3000 },
+            { min: 50,  max: 59,  rank1: 6000,  rank2: 3500, rank3: 2500 },
+            { min: 40,  max: 49,  rank1: 4800,  rank2: 2800, rank3: 2000 },
+            { min: 30,  max: 39,  rank1: 3600,  rank2: 2100, rank3: 1500 },
+            { min: 1,   max: 29,  rank1: 3000,  rank2: 1750, rank3: 1250 }
+        ];
+
+        onValue(ref(db, 'poker_data'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.players) {
+                    window.players = Object.keys(data.players).map(key => {
+                        return { ...data.players[key], firebaseKey: key };
+                    });
+                } else {
+                    window.players = [];
+                }
+
+                if (data.logs) {
+                    window.logs = Object.keys(data.logs).map(key => {
+                        return { ...data.logs[key], firebaseKey: key };
+                    });
+                } else {
+                    window.logs = [];
+                }
+
+                window.prizeConfig = data.prizeConfig || { winner1: "", winner2: "", winner3: "" };
+                window.customMaster = data.customMaster || window.DEFAULT_MASTER;
+            } else {
+                window.players = [];
+                window.logs = [];
+                window.prizeConfig = { winner1: "", winner2: "", winner3: "" };
+                window.customMaster = window.DEFAULT_MASTER;
+            }
+            window.updateApp();
+        });
+
+        window.dbSavePlayer = function(playerData) {
+            const newPlayerRef = push(ref(db, 'poker_data/players'));
+            playerData.id = newPlayerRef.key;
+            set(newPlayerRef, playerData);
+        };
+
+        window.dbUpdatePlayer = function(playerId, updatedData) {
+            const player = window.players.find(p => p.id === playerId);
+            if (player && player.firebaseKey) {
+                updatedData.id = playerId;
+                set(ref(db, `poker_data/players/${player.firebaseKey}`), updatedData);
+            }
+        };
+
+        window.dbSaveLog = function(logData) {
+            const newLogRef = push(ref(db, 'poker_data/logs'));
+            logData.id = newLogRef.key;
+            set(newLogRef, logData);
+        };
+
+        window.dbUpdateLog = function(logId, updatedData) {
+            const log = window.logs.find(l => l.id === logId);
+            if (log && log.firebaseKey) {
+                updatedData.id = logId;
+                set(ref(db, `poker_data/logs/${log.firebaseKey}`), updatedData);
+            }
+        };
+
+        window.dbDeleteLog = function(logId) {
+            const log = window.logs.find(l => l.id === logId);
+            if (log && log.firebaseKey) {
+                remove(ref(db, `poker_data/logs/${log.firebaseKey}`));
+            }
+        };
+
+        window.dbSavePrizeConfig = function(config) {
+            set(ref(db, 'poker_data/prizeConfig'), config);
+        };
+
+        window.dbSaveCustomMaster = function(masterData) {
+            set(ref(db, 'poker_data/customMaster'), masterData);
+        };
+
+        window.dbClearAll = function() {
+            set(ref(db, 'poker_data'), null);
+        };
+    </script>
+</head>
+<body>
+
+<header>
+    <h1>
+        <span>POKER BOOST</span>
+        <span style="font-size:24px; color:var(--warning-color); font-weight:900; line-height: 1; text-shadow: 0 0 10px rgba(255,204,0,0.6); position: relative; top: -1px;">α</span>
+    </h1>
+    <div class="live-status">● REALTIME SYNC LIVE</div>
+</header>
+
+<div id="page-register" class="app-page active">
+    <div class="card">
+        <h2 id="player-form-title">1. プレイヤー登録</h2>
+        <form id="player-form" onsubmit="savePlayer(event)">
+            <input type="hidden" id="editing-player-id" value="">
+            <div class="form-group">
+                <label for="player-name">プレイヤー名</label>
+                <input type="text" id="player-name" required placeholder="名前を入力">
+            </div>
+            <div class="form-group">
+                <label for="player-level">レベル (1〜上限なし)</label>
+                <input type="number" id="player-level" min="1" required placeholder="数値を入力">
+            </div>
+            <div class="btn-group">
+                <button type="submit" id="player-submit-btn">プレイヤーを追加</button>
+                <button type="button" id="player-cancel-btn" class="secondary" style="display:none;" onclick="cancelPlayerEditMode()">中止</button>
+            </div>
+        </form>
+    </div>
+
+    <h2>登録プレイヤー状況</h2>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>名前</th>
+                    <th>Lv</th>
+                    <th>ボーナス</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="player-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="page-ko" class="app-page">
+    <div class="card">
+        <h2 id="ko-form-title">2. KO記録 (ノックアウト)</h2>
+        <form id="ko-form" onsubmit="recordKO(event)">
+            <input type="hidden" id="editing-log-id" value="">
+            <div class="form-group">
+                <label for="ko-killer">勝者 (Killer / 飛ばした人)</label>
+                <select id="ko-killer" required onchange="filterSelectOptions()">
+                    <option value="">勝者を選択</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ko-victim">敗者 (Victim / 飛ばされた人)</label>
+                <select id="ko-victim" required onchange="filterSelectOptions()">
+                    <option value="">敗者を選択</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button type="submit" id="ko-submit-btn">KOを記録</button>
+                <button type="button" id="ko-cancel-btn" class="secondary" style="display:none;" onclick="cancelEditMode()">中止</button>
+            </div>
+        </form>
+    </div>
+
+    <h2>KO履歴ログ</h2>
+    <div class="table-wrapper" style="margin-bottom: 20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>勝者(Lv) vs 敗者(Lv)</th>
+                    <th>判定</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="log-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="page-prize" class="app-page">
+    <div class="card" style="border-color: var(--prize-color);">
+        <h2 style="color: var(--prize-color);">🏆 終了後プライズ自動計算</h2>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top:-10px; margin-bottom:20px;">
+            ※入賞者を選択すると、設定されたレベル表からベース値を算出し、ボーナス%を自動上乗せします。
+        </p>
+
+        <div class="form-group">
+            <label style="font-size:15px; font-weight:bold; color:#fff;">🥇 1位のプレイヤー</label>
+            <select id="winner-1" onchange="syncPrizeInputs(); filterPrizeSelectOptions();">
+                <option value="">選択してください</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label style="font-size:15px; font-weight:bold; color:#fff;">🥈 2位のプレイヤー</label>
+            <select id="winner-2" onchange="syncPrizeInputs(); filterPrizeSelectOptions();">
+                <option value="">選択してください</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label style="font-size:15px; font-weight:bold; color:#fff;">🥉 3位のプレイヤー</label>
+            <select id="winner-3" onchange="syncPrizeInputs(); filterPrizeSelectOptions();">
+                <option value="">選択してください</option>
+            </select>
+        </div>
+
+        <div class="result-box">
+            <div class="result-title">💰 ボーナス上乗せ後の最終支給額</div>
+            <div id="prize-results-output" style="font-size: 14px; line-height: 1.8;">
+                プレイヤーを選択するとここに計算結果がリアルタイム表示されます。
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="page-master" class="app-page">
+    <div class="card" style="border-color: var(--gear-color);">
+        <h2 style="color: var(--gear-color);">⚙️ レベル別プライズ表設定</h2>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top:-10px; margin-bottom:15px;">
+            緊急で支給基準数値を変更したい場合はここを書き換えて「設定を保存」を押してください。（全端末へ同期されます）
+        </p>
+
+        <div class="master-header">
+            <div>対象レベル</div>
+            <div>1位ベース</div>
+            <div>2位ベース</div>
+            <div>3位ベース</div>
+        </div>
+
+        <div id="master-inputs-container"></div>
+
+        <button type="button" style="background-color: var(--gear-color); color:#fff; margin-top:15px;" onclick="saveCustomMasterFromUI()">
+            💾 この数値で設定を保存・同期
+        </button>
+
+        <button type="button" class="secondary" style="margin-top:10px; border-color:var(--gear-color); color:#fff;" onclick="resetMasterToDefault()">
+            🔄 設定数値を公式の初期値に戻す
+        </button>
+    </div>
+
+    <div class="card" style="border-color: var(--danger-color); margin-top:30px;">
+        <h2 style="color: var(--danger-color); font-size:15px;">⚠️ サーバーデータ一括リセット</h2>
+        <button class="action-btn delete" style="width: 100%; padding: 14px; margin: 0; font-size: 15px;" onclick="clearAllData()">サーバーの全データをリセット</button>
+    </div>
+</div>
+
+<div class="tab-bar">
+    <button class="tab-item active" id="tab-register" onclick="switchPage('register')">
+        <div class="tab-icon">👤</div>
+        <div>登録</div>
+    </button>
+    <button class="tab-item" id="tab-ko" onclick="switchPage('ko')">
+        <div class="tab-icon">🎯</div>
+        <div>KO記録</div>
+    </button>
+    <button class="tab-item" id="tab-prize" onclick="switchPage('prize')">
+        <div class="tab-icon">🏆</div>
+        <div>プライズ</div>
+    </button>
+    <button class="tab-item gear-tab" id="tab-master" onclick="switchPage('master')">
+        <div class="tab-icon">⚙️</div>
+        <div>設定</div>
+    </button>
+</div>
+
+<script>
+    let globalPlayerStats = {};
+
+    function getBasePrize(level, rankNum) {
+        const master = window.customMaster || [];
+        const row = master.find(m => level >= m.min && level <= m.max);
+        if (!row) return 0;
+        if (rankNum === 1) return parseInt(row.rank1, 10) || 0;
+        if (rankNum === 2) return parseInt(row.rank2, 10) || 0;
+        if (rankNum === 3) return parseInt(row.rank3, 10) || 0;
+        return 0;
+    }
+
+    function switchPage(pageName) {
+        document.getElementById('page-register').classList.remove('active');
+        document.getElementById('page-ko').classList.remove('active');
+        document.getElementById('page-prize').classList.remove('active');
+        document.getElementById('page-master').classList.remove('active');
+        document.getElementById('tab-register').classList.remove('active');
+        document.getElementById('tab-ko').classList.remove('active');
+        document.getElementById('tab-prize').classList.remove('active');
+        document.getElementById('tab-master').classList.remove('active');
+
+        if (pageName === 'register') { document.getElementById('page-register').classList.add('active'); document.getElementById('tab-register').classList.add('active'); } 
+        else if (pageName === 'ko') { document.getElementById('page-ko').classList.add('active'); document.getElementById('tab-ko').classList.add('active'); renderSelectOptions(); } 
+        else if (pageName === 'prize') { document.getElementById('page-prize').classList.add('active'); document.getElementById('tab-prize').classList.add('active'); renderPrizeSelectOptions(); } 
+        else if (pageName === 'master') { document.getElementById('page-master').classList.add('active'); document.getElementById('tab-master').classList.add('active'); renderMasterSettingsUI(); }
+    }
+
+    function savePlayer(event) {
+        event.preventDefault();
+        const nameInput = document.getElementById('player-name');
+        const levelInput = document.getElementById('player-level');
+        const editingPlayerId = document.getElementById('editing-player-id').value;
+        const playerData = { name: nameInput.value.trim(), level: parseInt(levelInput.value, 10) };
+        if (editingPlayerId) { window.dbUpdatePlayer(editingPlayerId, playerData); cancelPlayerEditMode(); } 
+        else { window.dbSavePlayer(playerData); }
+        nameInput.value = ''; levelInput.value = '';
+    }
+
+    function editPlayer(playerId) {
+        const player = window.players.find(p => p.id === playerId);
+        if (!player) return;
+        document.getElementById('editing-player-id').value = player.id;
+        document.getElementById('player-name').value = player.name;
+        document.getElementById('player-level').value = player.level;
+        document.getElementById('player-form-title').innerText = "1. プレイヤー情報の編集";
+        document.getElementById('player-submit-btn').innerText = "情報を更新する";
+        document.getElementById('player-cancel-btn').style.display = "inline-block";
+        window.scrollTo(0, 0);
+    }
+
+    function cancelPlayerEditMode() {
+        document.getElementById('editing-player-id').value = "";
+        document.getElementById('player-form').reset();
+        document.getElementById('player-form-title').innerText = "1. プレイヤー登録";
+        document.getElementById('player-submit-btn').innerText = "プレイヤーを追加";
+        document.getElementById('player-cancel-btn').style.display = "none";
+    }
+
+    function recordKO(event) {
+        event.preventDefault();
+        const killerId = document.getElementById('ko-killer').value;
+        const victimId = document.getElementById('ko-victim').value;
+        const editingId = document.getElementById('editing-log-id').value;
+        const logData = { killerId: killerId, victimId: victimId };
+        if (editingId) { window.dbUpdateLog(editingId, logData); cancelEditMode(); } 
+        else { window.dbSaveLog(logData); }
+        document.getElementById('ko-form').reset();
+    }
+
+    function editLog(logId) {
+        const log = window.logs.find(l => l.id === logId);
+        if (!log) return;
+        document.getElementById('editing-log-id').value = log.id;
+        renderSelectOptions();
+        document.getElementById('ko-killer').value = log.killerId;
+        document.getElementById('ko-victim').value = log.victimId;
+        filterSelectOptions();
+        document.getElementById('ko-form-title').innerText = "2. KO記録の編集";
+        document.getElementById('ko-submit-btn').innerText = "変更を保存";
+        document.getElementById('ko-cancel-btn').style.display = "inline-block";
+        window.scrollTo(0, 0);
+    }
+
+    function cancelEditMode() {
+        document.getElementById('editing-log-id').value = "";
+        document.getElementById('ko-form').reset();
+        document.getElementById('ko-form-title').innerText = "2. KO記録 (ノックアウト)";
+        document.getElementById('ko-submit-btn').innerText = "KOを記録";
+        document.getElementById('ko-cancel-btn').style.display = "none";
+        renderSelectOptions();
+    }
+
+    function deleteLog(logId) {
+        if(confirm("このKO履歴を削除しますか？")) { window.dbDeleteLog(logId); }
+    }
+
+    function renderSelectOptions() {
+        const killerSelect = document.getElementById('ko-killer');
+        const victimSelect = document.getElementById('ko-victim');
+        if (!killerSelect || !victimSelect) return;
+        const curK = killerSelect.value; const curV = victimSelect.value;
+        let kHtml = '<option value="">勝者を選択</option>'; let vHtml = '<option value="">敗者を選択</option>';
+        (window.players || []).forEach(p => {
+            kHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
+            vHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
+        });
+        killerSelect.innerHTML = kHtml; victimSelect.innerHTML = vHtml;
+        killerSelect.value = curK; victimSelect.value = curV;
+    }
+
+    function filterSelectOptions() {
+        const killerSelect = document.getElementById('ko-killer');
+        const victimSelect = document.getElementById('ko-victim');
+        if (!killerSelect || !victimSelect) return;
+        const selectedKiller = killerSelect.value; const selectedVictim = victimSelect.value;
+        Array.from(killerSelect.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === selectedVictim) ? "none" : "block"; });
+        Array.from(victimSelect.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === selectedKiller) ? "none" : "block"; });
+    }
+
+    function renderPrizeSelectOptions() {
+        const w1 = document.getElementById('winner-1');
+        const w2 = document.getElementById('winner-2');
+        const w3 = document.getElementById('winner-3');
+        if(!w1 || !w2 || !w3) return;
+        const cur1 = w1.value; const cur2 = w2.value; const cur3 = w3.value;
+        let html = '<option value="">選択してください</option>';
+        (window.players || []).forEach(p => { html += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`; });
+        w1.innerHTML = html; w2.innerHTML = html; w3.innerHTML = html;
+        w1.value = cur1; w2.value = cur2; w3.value = cur3;
+    }
+
+    function filterPrizeSelectOptions() {
+        const w1 = document.getElementById('winner-1'); const w2 = document.getElementById('winner-2'); const w3 = document.getElementById('winner-3');
+        if (!w1 || !w2 || !w3) return;
+        const val1 = w1.value; const val2 = w2.value; const val3 = w3.value;
+        Array.from(w1.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === val2 || opt.value === val3) ? "none" : "block"; });
+        Array.from(w2.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === val1 || opt.value === val3) ? "none" : "block"; });
+        Array.from(w3.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === val1 || opt.value === val2) ? "none" : "block"; });
+    }
+
+    function syncPrizeInputs() {
+        const config = { winner1: document.getElementById('winner-1').value, winner2: document.getElementById('winner-2').value, winner3: document.getElementById('winner-3').value };
+        window.dbSavePrizeConfig(config);
+    }
+
+    function renderMasterSettingsUI() {
+        const container = document.getElementById('master-inputs-container');
+        if (!container || !window.customMaster) return;
+        container.innerHTML = "";
+        window.customMaster.forEach((m, idx) => {
+            const row = document.createElement('div'); row.className = "master-row";
+            let lvLabel = `Lv.${m.min}〜${m.max}`; if (m.min === 100) lvLabel = "Lv.100以上"; if (m.min === 1) lvLabel = "Lv.1〜29";
+            row.innerHTML = `<div style="font-size:12px; font-weight:bold; color:var(--text-muted); padding-left:5px;">${lvLabel}</div><input type="number" id="m-r1-${idx}" value="${m.rank1}"><input type="number" id="m-r2-${idx}" value="${m.rank2}"><input type="number" id="m-r3-${idx}" value="${m.rank3}">`;
+            container.appendChild(row);
+        });
+    }
+
+    function saveCustomMasterFromUI() {
+        if (!window.customMaster) return;
+        const updatedMaster = window.customMaster.map((m, idx) => {
+            return { min: m.min, max: m.max, rank1: parseInt(document.getElementById(`m-r1-${idx}`).value, 10) || 0, rank2: parseInt(document.getElementById(`m-r2-${idx}`).value, 10) || 0, rank3: parseInt(document.getElementById(`m-r3-${idx}`).value, 10) || 0 };
+        });
+        window.dbSaveCustomMaster(updatedMaster); alert("設定を更新し、全端末へ同期しました！");
+    }
+
+    function resetMasterToDefault() {
+        if (confirm("本当にレベル別プライズ表の数値を【公式の初期値】に戻しますか？")) { window.dbSaveCustomMaster(window.DEFAULT_MASTER); alert("公式の初期設定数値にリセット・同期しました！"); }
+    }
+
+    function calculateFinalPrizes() {
+        const output = document.getElementById('prize-results-output'); if (!output) return;
+        const conf = window.prizeConfig || { winner1: "", winner2: "", winner3: "" };
+        document.getElementById('winner-1').value = conf.winner1; document.getElementById('winner-2').value = conf.winner2; document.getElementById('winner-3').value = conf.winner3;
+        let resultsHtml = "";
+        const positions = [{ label: "🥇 1位", winnerId: conf.winner1, rankNum: 1 }, { label: "🥈 2位", winnerId: conf.winner2, rankNum: 2 }, { label: "🥉 3位", winnerId: conf.winner3, rankNum: 3 }];
+        let selectionCount = 0;
+        positions.forEach(pos => {
+            if (pos.winnerId) {
+                selectionCount++; const pInfo = window.players.find(p => p.id === pos.winnerId); const pStats = globalPlayerStats[pos.winnerId] || { bonus: 0 };
+                if (pInfo) {
+                    const basePrize = getBasePrize(pInfo.level, pos.rankNum); const bonusRate = pStats.bonus / 100; const finalPrize = Math.round(basePrize * (1 + bonusRate));
+                    resultsHtml += `<div style="margin-bottom:12px; border-bottom:1px solid #2e3d56; padding-bottom:8px;"><strong>${pos.label}: ${pInfo.name}</strong> (Lv.${pInfo.level})<br><span style="font-size:12px; color:var(--text-muted);">↳ 基準値: ${basePrize} / ボーナス: +${pStats.bonus}%</span><br>➔ <span style="color:var(--warning-color); font-weight:800; font-size:18px;">${finalPrize.toLocaleString()}</span></div>`;
+                }
+            }
+        });
+        if (selectionCount === 0) { output.innerHTML = "プレイヤーを選択するとここに計算結果がリアルタイム表示されます。"; } else { output.innerHTML = resultsHtml; }
+    }
+
+    window.updateApp = function() {
+        renderSelectOptions(); filterSelectOptions(); renderPrizeSelectOptions(); filterPrizeSelectOptions();
+        globalPlayerStats = {};
+        (window.players || []).forEach(p => { globalPlayerStats[p.id] = { bonus: 0 }; });
+        (window.logs || []).forEach(log => {
+            const killer = window.players.find(p => p.id === log.killerId); const victim = window.players.find(p => p.id === log.victimId);
+            if (!killer || !victim) return;
+            if (killer.level < victim.level) { if (globalPlayerStats[killer.id]) { globalPlayerStats[killer.id].bonus += 5; } }
+        });
+
+        const playerTableBody = document.getElementById('player-table-body');
+        if (playerTableBody) {
+            playerTableBody.innerHTML = '';
+            if (!window.players || window.players.length === 0) { playerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">登録プレイヤーなし</td></tr>'; } 
+            else {
+                window.players.forEach(p => {
+                    const stats = globalPlayerStats[p.id] || { bonus: 0 }; const row = document.createElement('tr');
+                    row.innerHTML = `<td><strong>${p.name}</strong></td><td>${p.level}</td><td><span style="color: ${stats.bonus > 0 ? 'var(--accent-color)' : '#fff'}; font-weight:bold;">+${stats.bonus}%</span></td><td><button class="action-btn edit" onclick="editPlayer('${p.id}')">編集</button></td>`;
+                    playerTableBody.appendChild(row);
+                });
+            }
+        }
+
+        const logTableBody = document.getElementById('log-table-body');
+        if (logTableBody) {
+            logTableBody.innerHTML = '';
+            if (!window.logs || window.logs.length === 0) { logTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">ログなし</td></tr>'; } 
+            else {
+                [...window.logs].reverse().forEach(log => {
+                    const killer = window.players.find(p => p.id === log.killerId); const victim = window.players.find(p => p.id === log.victimId);
+                    const kText = killer ? `${killer.name}(${killer.level})` : '不明'; const vText = victim ? `${victim.name}(${victim.level})` : '不明'; const isBonus = killer && victim && killer.level < victim.level;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td><span style="color:var(--accent-color);font-weight:500;">${kText}</span><br><span style="color:var(--text-muted);font-size:12px;">↳ 撃破: ${vText}</span></td><td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td><td><button class="action-btn edit" onclick="editLog('${log.id}')">編集</button><button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button></td>`;
+                    logTableBody.appendChild(row);
+                });
+            }
+        }
+        calculateFinalPrizes();
+    }
+
+    function clearAllData() {
+        if (confirm("本当に【サーバーの全データ】をリセットしますか？")) { window.dbClearAll(); cancelPlayerEditMode(); cancelEditMode(); }
+    }
+</script>
+</body>
+</html>
