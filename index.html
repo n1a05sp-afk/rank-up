@@ -239,9 +239,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 組み込み済みのなぎささん専用Firebase設定
+        // なぎささん専用Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyBKe7D1PTo1RjpmiwXEZLy59GS2Pcl-f7o",
             authDomain: "poker-boost.firebaseapp.com",
@@ -258,11 +258,26 @@
         window.players = [];
         window.logs = [];
 
+        // リアルタイムデータ受信
         onValue(ref(db, 'poker_data'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                window.players = data.players ? Object.values(data.players) : [];
-                window.logs = data.logs ? Object.values(data.logs) : [];
+                // Firebaseから取得したデータを配列に変換する際、Firebase内の「キー(一意識別名)」を保持する
+                if (data.players) {
+                    window.players = Object.keys(data.players).map(key => {
+                        return { ...data.players[key], firebaseKey: key };
+                    });
+                } else {
+                    window.players = [];
+                }
+
+                if (data.logs) {
+                    window.logs = Object.keys(data.logs).map(key => {
+                        return { ...data.logs[key], firebaseKey: key };
+                    });
+                } else {
+                    window.logs = [];
+                }
             } else {
                 window.players = [];
                 window.logs = [];
@@ -277,15 +292,11 @@
         };
 
         window.dbUpdatePlayer = function(playerId, updatedData) {
-            onValue(ref(db, 'poker_data/players'), (snapshot) => {
-                const playersObj = snapshot.val();
-                for (let key in playersObj) {
-                    if (playersObj[key].id === playerId) {
-                        set(ref(db, `poker_data/players/${key}`), updatedData);
-                        break;
-                    }
-                }
-            }, { onlyOnce: true });
+            const player = window.players.find(p => p.id === playerId);
+            if (player && player.firebaseKey) {
+                updatedData.id = playerId;
+                set(ref(db, `poker_data/players/${player.firebaseKey}`), updatedData);
+            }
         };
 
         window.dbSaveLog = function(logData) {
@@ -295,15 +306,19 @@
         };
 
         window.dbUpdateLog = function(logId, updatedData) {
-            onValue(ref(db, 'poker_data/logs'), (snapshot) => {
-                const logsObj = snapshot.val();
-                for (let key in logsObj) {
-                    if (logsObj[key].id === logId) {
-                        set(ref(db, `poker_data/logs/${key}`), updatedData);
-                        break;
-                    }
-                }
-            }, { onlyOnce: true });
+            const log = window.logs.find(l => l.id === logId);
+            if (log && log.firebaseKey) {
+                updatedData.id = logId;
+                set(ref(db, `poker_data/logs/${log.firebaseKey}`), updatedData);
+            }
+        };
+
+        // 【復活】特定のKO履歴をサーバーから完全に消去する関数
+        window.dbDeleteLog = function(logId) {
+            const log = window.logs.find(l => l.id === logId);
+            if (log && log.firebaseKey) {
+                remove(ref(db, `poker_data/logs/${log.firebaseKey}`));
+            }
         };
 
         window.dbClearAll = function() {
@@ -440,7 +455,6 @@
         };
 
         if (editingPlayerId) {
-            playerData.id = editingPlayerId;
             window.dbUpdatePlayer(editingPlayerId, playerData);
             cancelPlayerEditMode();
         } else {
@@ -485,7 +499,6 @@
         };
 
         if (editingId) {
-            logData.id = editingId;
             window.dbUpdateLog(editingId, logData);
             cancelEditMode();
         } else {
@@ -519,6 +532,13 @@
         document.getElementById('ko-submit-btn').innerText = "KOを記録";
         document.getElementById('ko-cancel-btn').style.display = "none";
         renderSelectOptions();
+    }
+
+    // 【復活】ログ消去のアラームと実行処理
+    function deleteLog(logId) {
+        if(confirm("このKO履歴を削除しますか？\n（勝者の％ボーナスも自動でマイナスされます）")) {
+            window.dbDeleteLog(logId);
+        }
     }
 
     function renderSelectOptions() {
@@ -572,6 +592,7 @@
             const victim = window.players.find(p => p.id === log.victimId);
             if (!killer || !victim) return;
 
+            // 格上撃破ボーナスの判定
             if (killer.level < victim.level) {
                 if (playerStats[killer.id]) {
                     playerStats[killer.id].bonus += 5;
@@ -622,6 +643,7 @@
                     <td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td>
                     <td>
                         <button class="action-btn edit" onclick="editLog('${log.id}')">編集</button>
+                        <button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button>
                     </td>
                 `;
                 logTableBody.appendChild(row);
