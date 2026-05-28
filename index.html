@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poker Boost Mobile - Cyber Neon</title>
+    <title>Poker Boost Mobile - Firebase Live</title>
     <style>
         :root {
             --bg-color: #0b0e14;
             --container-bg: #121722;
             --card-bg: #1a2232;
-            --accent-color: #00ffcc; /* 最初のネオンターコイズ */
+            --accent-color: #00ffcc;
             --text-color: #ffffff;
             --text-muted: #64748b;
             --border-color: #2e3d56;
@@ -228,19 +228,94 @@
             margin-bottom: 4px;
         }
 
-        .system-ops {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
+        .live-status {
+            text-align: center;
+            font-size: 12px;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-weight: bold;
         }
-        .system-ops button { font-size: 13px; padding: 10px; }
     </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 組み込み済みのなぎささん専用Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKe7D1PTo1RjpmiwXEZLy59GS2Pcl-f7o",
+            authDomain: "poker-boost.firebaseapp.com",
+            databaseURL: "https://poker-boost-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "poker-boost",
+            storageBucket: "poker-boost.firebasestorage.app",
+            messagingSenderId: "992006646965",
+            appId: "1:992006646965:web:0f67d46d1b1a79895a22fc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.players = [];
+        window.logs = [];
+
+        onValue(ref(db, 'poker_data'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                window.players = data.players ? Object.values(data.players) : [];
+                window.logs = data.logs ? Object.values(data.logs) : [];
+            } else {
+                window.players = [];
+                window.logs = [];
+            }
+            window.updateApp();
+        });
+
+        window.dbSavePlayer = function(playerData) {
+            const newPlayerRef = push(ref(db, 'poker_data/players'));
+            playerData.id = newPlayerRef.key;
+            set(newPlayerRef, playerData);
+        };
+
+        window.dbUpdatePlayer = function(playerId, updatedData) {
+            onValue(ref(db, 'poker_data/players'), (snapshot) => {
+                const playersObj = snapshot.val();
+                for (let key in playersObj) {
+                    if (playersObj[key].id === playerId) {
+                        set(ref(db, `poker_data/players/${key}`), updatedData);
+                        break;
+                    }
+                }
+            }, { onlyOnce: true });
+        };
+
+        window.dbSaveLog = function(logData) {
+            const newLogRef = push(ref(db, 'poker_data/logs'));
+            logData.id = newLogRef.key;
+            set(newLogRef, logData);
+        };
+
+        window.dbUpdateLog = function(logId, updatedData) {
+            onValue(ref(db, 'poker_data/logs'), (snapshot) => {
+                const logsObj = snapshot.val();
+                for (let key in logsObj) {
+                    if (logsObj[key].id === logId) {
+                        set(ref(db, `poker_data/logs/${key}`), updatedData);
+                        break;
+                    }
+                }
+            }, { onlyOnce: true });
+        };
+
+        window.dbClearAll = function() {
+            set(ref(db, 'poker_data'), null);
+        };
+    </script>
 </head>
 <body>
 
 <header>
     <h1>POKER BOOST</h1>
+    <div class="live-status">● REALTIME SYNC LIVE</div>
 </header>
 
 <div id="page-register" class="app-page active">
@@ -263,7 +338,7 @@
         </form>
     </div>
 
-    <h2>登録プレイヤー状況</h2>
+    <h2>登録プレイヤー状況 (全員共通)</h2>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -303,7 +378,7 @@
         </form>
     </div>
 
-    <h2>KO履歴ログ</h2>
+    <h2>KO履歴ログ (全員共通)</h2>
     <div class="table-wrapper" style="margin-bottom: 20px;">
         <table>
             <thead>
@@ -319,10 +394,8 @@
 
     <div class="card">
         <h2>データ管理</h2>
-        <div class="system-ops">
-            <button class="secondary" onclick="saveToLocalStorage()">ブラウザにデータを一時保存</button>
-            <button class="secondary" onclick="loadFromLocalStorage()">保存データから読込</button>
-            <button class="action-btn delete" style="width: 100%; padding: 10px;" onclick="clearAllData()">全データをリセット</button>
+        <div class="system-ops" style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="action-btn delete" style="width: 100%; padding: 14px; margin: 0; font-size: 15px;" onclick="clearAllData()">サーバーの全データをリセット</button>
         </div>
     </div>
 </div>
@@ -339,9 +412,6 @@
 </div>
 
 <script>
-    let players = [];
-    let logs = [];
-
     function switchPage(pageName) {
         document.getElementById('page-register').classList.remove('active');
         document.getElementById('page-ko').classList.remove('active');
@@ -354,7 +424,6 @@
         } else if (pageName === 'ko') {
             document.getElementById('page-ko').classList.add('active');
             document.getElementById('tab-ko').classList.add('active');
-            // 記録ページを開いた際リストを最新に更新
             renderSelectOptions();
         }
     }
@@ -365,29 +434,25 @@
         const levelInput = document.getElementById('player-level');
         const editingPlayerId = document.getElementById('editing-player-id').value;
 
+        const playerData = {
+            name: nameInput.value.trim(),
+            level: parseInt(levelInput.value, 10)
+        };
+
         if (editingPlayerId) {
-            const playerIndex = players.findIndex(p => p.id === editingPlayerId);
-            if (playerIndex !== -1) {
-                players[playerIndex].name = nameInput.value.trim();
-                players[playerIndex].level = parseInt(levelInput.value, 10);
-            }
+            playerData.id = editingPlayerId;
+            window.dbUpdatePlayer(editingPlayerId, playerData);
             cancelPlayerEditMode();
         } else {
-            const newPlayer = {
-                id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                name: nameInput.value.trim(),
-                level: parseInt(levelInput.value, 10)
-            };
-            players.push(newPlayer);
+            window.dbSavePlayer(playerData);
         }
 
         nameInput.value = '';
         levelInput.value = '';
-        updateApp();
     }
 
     function editPlayer(playerId) {
-        const player = players.find(p => p.id === playerId);
+        const player = window.players.find(p => p.id === playerId);
         if (!player) return;
 
         document.getElementById('editing-player-id').value = player.id;
@@ -414,37 +479,32 @@
         const victimId = document.getElementById('ko-victim').value;
         const editingId = document.getElementById('editing-log-id').value;
 
+        const logData = {
+            killerId: killerId,
+            victimId: victimId
+        };
+
         if (editingId) {
-            const logIndex = logs.findIndex(l => l.id === editingId);
-            if (logIndex !== -1) {
-                logs[logIndex].killerId = killerId;
-                logs[logIndex].victimId = victimId;
-            }
+            logData.id = editingId;
+            window.dbUpdateLog(editingId, logData);
             cancelEditMode();
         } else {
-            const newLog = {
-                id: 'l_' + Date.now(),
-                killerId: killerId,
-                victimId: victimId
-            };
-            logs.push(newLog);
+            window.dbSaveLog(logData);
         }
 
         document.getElementById('ko-form').reset();
-        updateApp();
     }
 
     function editLog(logId) {
-        const log = logs.find(l => l.id === logId);
+        const log = window.logs.find(l => l.id === logId);
         if (!log) return;
 
         document.getElementById('editing-log-id').value = log.id;
         
-        // 編集の際は一旦すべての選択肢を再描画してから値をセット
         renderSelectOptions();
         document.getElementById('ko-killer').value = log.killerId;
         document.getElementById('ko-victim').value = log.victimId;
-        filterSelectOptions(); // 重複排除を適用
+        filterSelectOptions();
 
         document.getElementById('ko-form-title').innerText = "2. KO記録の編集";
         document.getElementById('ko-submit-btn').innerText = "変更を保存";
@@ -461,14 +521,6 @@
         renderSelectOptions();
     }
 
-    function deleteLog(logId) {
-        if(confirm("このログを削除しますか？\n（％ボーナスも自動で差し戻されます）")) {
-            logs = logs.filter(l => l.id !== logId);
-            updateApp();
-        }
-    }
-
-    // セレクトボックスの選択肢を生成・リセットする独立関数
     function renderSelectOptions() {
         const killerSelect = document.getElementById('ko-killer');
         const victimSelect = document.getElementById('ko-victim');
@@ -478,7 +530,7 @@
         let kHtml = '<option value="">勝者を選択</option>';
         let vHtml = '<option value="">敗者を選択</option>';
         
-        players.forEach(p => {
+        (window.players || []).forEach(p => {
             kHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
             vHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
         });
@@ -489,39 +541,35 @@
         victimSelect.value = curV;
     }
 
-    // 【今回のアップデート】重複したプレイヤーを選択肢から消すロジック
     function filterSelectOptions() {
         const killerSelect = document.getElementById('ko-killer');
         const victimSelect = document.getElementById('ko-victim');
         const selectedKiller = killerSelect.value;
         const selectedVictim = victimSelect.value;
 
-        // 勝者のリストを走査：敗者に選ばれている人を隠す
         Array.from(killerSelect.options).forEach(opt => {
             if (opt.value === "") return;
             opt.style.display = (opt.value === selectedVictim) ? "none" : "block";
         });
 
-        // 敗者のリストを走査：勝者に選ばれている人を隠す
         Array.from(victimSelect.options).forEach(opt => {
             if (opt.value === "") return;
             opt.style.display = (opt.value === selectedKiller) ? "none" : "block";
         });
     }
 
-    function updateApp() {
-        // リスト選択肢の基本同期
+    window.updateApp = function() {
         renderSelectOptions();
         filterSelectOptions();
 
         const playerStats = {};
-        players.forEach(p => {
+        (window.players || []).forEach(p => {
             playerStats[p.id] = { bonus: 0, koCount: 0 };
         });
 
-        logs.forEach(log => {
-            const killer = players.find(p => p.id === log.killerId);
-            const victim = players.find(p => p.id === log.victimId);
+        (window.logs || []).forEach(log => {
+            const killer = window.players.find(p => p.id === log.killerId);
+            const victim = window.players.find(p => p.id === log.victimId);
             if (!killer || !victim) return;
 
             if (killer.level < victim.level) {
@@ -534,10 +582,10 @@
 
         const playerTableBody = document.getElementById('player-table-body');
         playerTableBody.innerHTML = '';
-        if (players.length === 0) {
+        if (!window.players || window.players.length === 0) {
             playerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">登録プレイヤーなし</td></tr>';
         } else {
-            players.forEach(p => {
+            window.players.forEach(p => {
                 const stats = playerStats[p.id] || { bonus: 0, koCount: 0 };
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -554,12 +602,12 @@
 
         const logTableBody = document.getElementById('log-table-body');
         logTableBody.innerHTML = '';
-        if (logs.length === 0) {
+        if (!window.logs || window.logs.length === 0) {
             logTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">ログなし</td></tr>';
         } else {
-            [...logs].reverse().forEach(log => {
-                const killer = players.find(p => p.id === log.killerId);
-                const victim = players.find(p => p.id === log.victimId);
+            [...window.logs].reverse().forEach(log => {
+                const killer = window.players.find(p => p.id === log.killerId);
+                const victim = window.players.find(p => p.id === log.victimId);
 
                 const kText = killer ? `${killer.name}(${killer.level})` : '不明';
                 const vText = victim ? `${victim.name}(${victim.level})` : '不明';
@@ -574,7 +622,6 @@
                     <td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td>
                     <td>
                         <button class="action-btn edit" onclick="editLog('${log.id}')">編集</button>
-                        <button class="action-btn delete" onclick="deleteLog('${log.id}')">取消</button>
                     </td>
                 `;
                 logTableBody.appendChild(row);
@@ -582,34 +629,13 @@
         }
     }
 
-    function saveToLocalStorage() {
-        localStorage.setItem('poker_players_final_neon_v2', JSON.stringify(players));
-        localStorage.setItem('poker_logs_final_neon_v2', JSON.stringify(logs));
-        alert('データを保存しました。');
-    }
-
-    function loadFromLocalStorage() {
-        const savedPlayers = localStorage.getItem('poker_players_final_neon_v2');
-        const savedLogs = localStorage.getItem('poker_logs_final_neon_v2');
-        if (savedPlayers) players = JSON.parse(savedPlayers);
-        if (savedLogs) logs = JSON.parse(savedLogs);
-        updateApp();
-        alert('データを読み込みました。');
-    }
-
     function clearAllData() {
-        if (confirm("本当にリセットしますか？")) {
-            players = [];
-            logs = [];
-            localStorage.removeItem('poker_players_final_neon_v2');
-            localStorage.removeItem('poker_logs_final_neon_v2');
+        if (confirm("本当に【サーバーの全データ】をリセットしますか？\n他のスタッフの画面からも同時に消去されます。")) {
+            window.dbClearAll();
             cancelPlayerEditMode();
             cancelEditMode();
-            updateApp();
         }
     }
-
-    updateApp();
 </script>
 </body>
 </html>
