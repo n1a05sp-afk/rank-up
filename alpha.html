@@ -637,9 +637,27 @@
         const killerId = document.getElementById('ko-killer').value;
         const victimId = document.getElementById('ko-victim').value;
         const editingId = document.getElementById('editing-log-id').value;
-        const logData = { killerId: killerId, victimId: victimId };
-        if (editingId) { window.dbUpdateLog(editingId, logData); cancelEditMode(); } 
-        else { window.dbSaveLog(logData); }
+        
+        // 🌟 現在の「時:分:秒」の文字列を作成
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+                        String(now.getMinutes()).padStart(2, '0') + ':' + 
+                        String(now.getSeconds()).padStart(2, '0');
+
+        const logData = { 
+            killerId: killerId, 
+            victimId: victimId,
+            time: timeStr // 時間データをサーバーに保存
+        };
+        
+        if (editingId) {
+            const oldLog = window.logs.find(l => l.id === editingId);
+            if (oldLog && oldLog.time) logData.time = oldLog.time;
+            window.dbUpdateLog(editingId, logData); 
+            cancelEditMode(); 
+        } else { 
+            window.dbSaveLog(logData); 
+        }
         document.getElementById('ko-form').reset();
     }
 
@@ -793,8 +811,12 @@
                 [...window.logs].reverse().forEach(log => {
                     const killer = window.players.find(p => p.id === log.killerId); const victim = window.players.find(p => p.id === log.victimId);
                     const kText = killer ? `${killer.name}(${killer.level})` : '不明'; const vText = victim ? `${victim.name}(${victim.level})` : '不明'; const isBonus = killer && victim && killer.level < victim.level;
+                    
+                    // 🌟 ログ画面に時間を表示するスタイルを追加
+                    const timeLabel = log.time ? `<span style="color:var(--warning-color); font-size:11px; font-weight:bold; margin-right:5px;">[${log.time}]</span>` : '';
+
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td><span style="color:var(--accent-color);font-weight:500;">${kText}</span><br><span style="color:var(--text-muted);font-size:12px;">↳ 撃破: ${vText}</span></td><td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td><td><button class="action-btn edit" onclick="editLog('${log.id}')">編集</button><button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button></td>`;
+                    row.innerHTML = `<td>${timeLabel}<span style="color:var(--accent-color);font-weight:500;">${kText}</span><br><span style="color:var(--text-muted);font-size:12px;">↳ 撃破: ${vText}</span></td><td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td><td><button class="action-btn edit" onclick="editLog('${log.id}')">編集</button><button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button></td>`;
                     logTableBody.appendChild(row);
                 });
             }
