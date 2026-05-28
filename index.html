@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poker Boost Mobile - Firebase Live</title>
+    <title>Poker Boost Mobile</title>
     <style>
         :root {
             --bg-color: #0b0e14;
@@ -241,7 +241,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // なぎささん専用Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyBKe7D1PTo1RjpmiwXEZLy59GS2Pcl-f7o",
             authDomain: "poker-boost.firebaseapp.com",
@@ -258,11 +257,9 @@
         window.players = [];
         window.logs = [];
 
-        // リアルタイムデータ受信
         onValue(ref(db, 'poker_data'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Firebaseから取得したデータを配列に変換する際、Firebase内の「キー(一意識別名)」を保持する
                 if (data.players) {
                     window.players = Object.keys(data.players).map(key => {
                         return { ...data.players[key], firebaseKey: key };
@@ -313,16 +310,11 @@
             }
         };
 
-        // 【復活】特定のKO履歴をサーバーから完全に消去する関数
         window.dbDeleteLog = function(logId) {
             const log = window.logs.find(l => l.id === logId);
             if (log && log.firebaseKey) {
                 remove(ref(db, `poker_data/logs/${log.firebaseKey}`));
             }
-        };
-
-        window.dbClearAll = function() {
-            set(ref(db, 'poker_data'), null);
         };
     </script>
 </head>
@@ -353,7 +345,7 @@
         </form>
     </div>
 
-    <h2>登録プレイヤー状況 (全員共通)</h2>
+    <h2>登録プレイヤー状況</h2>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -393,7 +385,7 @@
         </form>
     </div>
 
-    <h2>KO履歴ログ (全員共通)</h2>
+    <h2>KO履歴ログ</h2>
     <div class="table-wrapper" style="margin-bottom: 20px;">
         <table>
             <thead>
@@ -406,27 +398,22 @@
             <tbody id="log-table-body"></tbody>
         </table>
     </div>
-
-    <div class="card">
-        <h2>データ管理</h2>
-        <div class="system-ops" style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="action-btn delete" style="width: 100%; padding: 14px; margin: 0; font-size: 15px;" onclick="clearAllData()">サーバーの全データをリセット</button>
-        </div>
-    </div>
 </div>
 
 <div class="tab-bar">
     <button class="tab-item active" id="tab-register" onclick="switchPage('register')">
         <div class="tab-icon">👤</div>
-        <div>プレイヤー登録</div>
+        <div>登録</div>
     </button>
     <button class="tab-item" id="tab-ko" onclick="switchPage('ko')">
         <div class="tab-icon">🎯</div>
-        <div>KO記録・ログ</div>
+        <div>KO記録</div>
     </button>
 </div>
 
 <script>
+    let globalPlayerStats = {};
+
     function switchPage(pageName) {
         document.getElementById('page-register').classList.remove('active');
         document.getElementById('page-ko').classList.remove('active');
@@ -448,31 +435,18 @@
         const nameInput = document.getElementById('player-name');
         const levelInput = document.getElementById('player-level');
         const editingPlayerId = document.getElementById('editing-player-id').value;
-
-        const playerData = {
-            name: nameInput.value.trim(),
-            level: parseInt(levelInput.value, 10)
-        };
-
-        if (editingPlayerId) {
-            window.dbUpdatePlayer(editingPlayerId, playerData);
-            cancelPlayerEditMode();
-        } else {
-            window.dbSavePlayer(playerData);
-        }
-
-        nameInput.value = '';
-        levelInput.value = '';
+        const playerData = { name: nameInput.value.trim(), level: parseInt(levelInput.value, 10) };
+        if (editingPlayerId) { window.dbUpdatePlayer(editingPlayerId, playerData); cancelPlayerEditMode(); } 
+        else { window.dbSavePlayer(playerData); }
+        nameInput.value = ''; levelInput.value = '';
     }
 
     function editPlayer(playerId) {
         const player = window.players.find(p => p.id === playerId);
         if (!player) return;
-
         document.getElementById('editing-player-id').value = player.id;
         document.getElementById('player-name').value = player.name;
         document.getElementById('player-level').value = player.level;
-
         document.getElementById('player-form-title').innerText = "1. プレイヤー情報の編集";
         document.getElementById('player-submit-btn').innerText = "情報を更新する";
         document.getElementById('player-cancel-btn').style.display = "inline-block";
@@ -492,33 +466,20 @@
         const killerId = document.getElementById('ko-killer').value;
         const victimId = document.getElementById('ko-victim').value;
         const editingId = document.getElementById('editing-log-id').value;
-
-        const logData = {
-            killerId: killerId,
-            victimId: victimId
-        };
-
-        if (editingId) {
-            window.dbUpdateLog(editingId, logData);
-            cancelEditMode();
-        } else {
-            window.dbSaveLog(logData);
-        }
-
+        const logData = { killerId: killerId, victimId: victimId };
+        if (editingId) { window.dbUpdateLog(editingId, logData); cancelEditMode(); } 
+        else { window.dbSaveLog(logData); }
         document.getElementById('ko-form').reset();
     }
 
     function editLog(logId) {
         const log = window.logs.find(l => l.id === logId);
         if (!log) return;
-
         document.getElementById('editing-log-id').value = log.id;
-        
         renderSelectOptions();
         document.getElementById('ko-killer').value = log.killerId;
         document.getElementById('ko-victim').value = log.victimId;
         filterSelectOptions();
-
         document.getElementById('ko-form-title').innerText = "2. KO記録の編集";
         document.getElementById('ko-submit-btn').innerText = "変更を保存";
         document.getElementById('ko-cancel-btn').style.display = "inline-block";
@@ -534,128 +495,78 @@
         renderSelectOptions();
     }
 
-    // 【復活】ログ消去のアラームと実行処理
     function deleteLog(logId) {
-        if(confirm("このKO履歴を削除しますか？\n（勝者の％ボーナスも自動でマイナスされます）")) {
-            window.dbDeleteLog(logId);
-        }
+        if(confirm("このKO履歴を削除しますか？")) { window.dbDeleteLog(logId); }
     }
 
     function renderSelectOptions() {
         const killerSelect = document.getElementById('ko-killer');
         const victimSelect = document.getElementById('ko-victim');
-        const curK = killerSelect.value;
-        const curV = victimSelect.value;
-
-        let kHtml = '<option value="">勝者を選択</option>';
-        let vHtml = '<option value="">敗者を選択</option>';
-        
+        if (!killerSelect || !victimSelect) return;
+        const curK = killerSelect.value; const curV = victimSelect.value;
+        let kHtml = '<option value="">勝者を選択</option>'; let vHtml = '<option value="">敗者を選択</option>';
         (window.players || []).forEach(p => {
             kHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
             vHtml += `<option value="${p.id}">${p.name} (Lv.${p.level})</option>`;
         });
-
-        killerSelect.innerHTML = kHtml;
-        victimSelect.innerHTML = vHtml;
-        killerSelect.value = curK;
-        victimSelect.value = curV;
+        killerSelect.innerHTML = kHtml; victimSelect.innerHTML = vHtml;
+        killerSelect.value = curK; victimSelect.value = curV;
     }
 
     function filterSelectOptions() {
         const killerSelect = document.getElementById('ko-killer');
         const victimSelect = document.getElementById('ko-victim');
-        const selectedKiller = killerSelect.value;
-        const selectedVictim = victimSelect.value;
-
-        Array.from(killerSelect.options).forEach(opt => {
-            if (opt.value === "") return;
-            opt.style.display = (opt.value === selectedVictim) ? "none" : "block";
-        });
-
-        Array.from(victimSelect.options).forEach(opt => {
-            if (opt.value === "") return;
-            opt.style.display = (opt.value === selectedKiller) ? "none" : "block";
-        });
+        if (!killerSelect || !victimSelect) return;
+        const selectedKiller = killerSelect.value; const selectedVictim = victimSelect.value;
+        Array.from(killerSelect.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === selectedVictim) ? "none" : "block"; });
+        Array.from(victimSelect.options).forEach(opt => { if (opt.value === "") return; opt.style.display = (opt.value === selectedKiller) ? "none" : "block"; });
     }
 
     window.updateApp = function() {
         renderSelectOptions();
         filterSelectOptions();
 
-        const playerStats = {};
-        (window.players || []).forEach(p => {
-            playerStats[p.id] = { bonus: 0, koCount: 0 };
-        });
+        globalPlayerStats = {};
+        (window.players || []).forEach(p => { globalPlayerStats[p.id] = { bonus: 0, koCount: 0 }; });
 
         (window.logs || []).forEach(log => {
             const killer = window.players.find(p => p.id === log.killerId);
             const victim = window.players.find(p => p.id === log.victimId);
             if (!killer || !victim) return;
-
-            // 格上撃破ボーナスの判定
-            if (killer.level < victim.level) {
-                if (playerStats[killer.id]) {
-                    playerStats[killer.id].bonus += 5;
-                    playerStats[killer.id].koCount += 1;
-                }
-            }
+            if (killer.level < victim.level) { if (globalPlayerStats[killer.id]) { globalPlayerStats[killer.id].bonus += 5; } }
         });
 
         const playerTableBody = document.getElementById('player-table-body');
-        playerTableBody.innerHTML = '';
-        if (!window.players || window.players.length === 0) {
-            playerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">登録プレイヤーなし</td></tr>';
-        } else {
-            window.players.forEach(p => {
-                const stats = playerStats[p.id] || { bonus: 0, koCount: 0 };
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.level}</td>
-                    <td><span style="color: ${stats.bonus > 0 ? 'var(--accent-color)' : '#fff'}; font-weight:bold;">+${stats.bonus}%</span></td>
-                    <td>
-                        <button class="action-btn edit" onclick="editPlayer('${p.id}')">編集</button>
-                    </td>
-                `;
-                playerTableBody.appendChild(row);
-            });
+        if (playerTableBody) {
+            playerTableBody.innerHTML = '';
+            if (!window.players || window.players.length === 0) {
+                playerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">登録プレイヤーなし</td></tr>';
+            } else {
+                window.players.forEach(p => {
+                    const stats = globalPlayerStats[p.id] || { bonus: 0 };
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td><strong>${p.name}</strong></td><td>${p.level}</td><td><span style="color: ${stats.bonus > 0 ? 'var(--accent-color)' : '#fff'}; font-weight:bold;">+${stats.bonus}%</span></td><td><button class="action-btn edit" onclick="editPlayer('${p.id}')">編集</button></td>`;
+                    playerTableBody.appendChild(row);
+                });
+            }
         }
 
         const logTableBody = document.getElementById('log-table-body');
-        logTableBody.innerHTML = '';
-        if (!window.logs || window.logs.length === 0) {
-            logTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">ログなし</td></tr>';
-        } else {
-            [...window.logs].reverse().forEach(log => {
-                const killer = window.players.find(p => p.id === log.killerId);
-                const victim = window.players.find(p => p.id === log.victimId);
-
-                const kText = killer ? `${killer.name}(${killer.level})` : '不明';
-                const vText = victim ? `${victim.name}(${victim.level})` : '不明';
-                const isBonus = killer && victim && killer.level < victim.level;
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>
-                        <span style="color:var(--accent-color);font-weight:500;">${kText}</span><br>
-                        <span style="color:var(--text-muted);font-size:12px;">↳ 撃破: ${vText}</span>
-                    </td>
-                    <td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td>
-                    <td>
-                        <button class="action-btn edit" onclick="editLog('${log.id}')">編集</button>
-                        <button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button>
-                    </td>
-                `;
-                logTableBody.appendChild(row);
-            });
-        }
-    }
-
-    function clearAllData() {
-        if (confirm("本当に【サーバーの全データ】をリセットしますか？\n他のスタッフの画面からも同時に消去されます。")) {
-            window.dbClearAll();
-            cancelPlayerEditMode();
-            cancelEditMode();
+        if (logTableBody) {
+            logTableBody.innerHTML = '';
+            if (!window.logs || window.logs.length === 0) {
+                logTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">ログなし</td></tr>';
+            } else {
+                [...window.logs].reverse().forEach(log => {
+                    const killer = window.players.find(p => p.id === log.killerId);
+                    const victim = window.players.find(p => p.id === log.victimId);
+                    const kText = killer ? `${killer.name}(${killer.level})` : '不明'; const vText = victim ? `${victim.name}(${victim.level})` : '不明';
+                    const isBonus = killer && victim && killer.level < victim.level;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td><span style="color:var(--accent-color);font-weight:500;">${kText}</span><br><span style="color:var(--text-muted);font-size:12px;">↳ 撃破: ${vText}</span></td><td>${isBonus ? '<span class="badge success">+5%</span>' : '<span class="badge none">--</span>'}</td><td><button class="action-btn edit" onclick="editLog('${log.id}')">編集</button><button class="action-btn delete" onclick="deleteLog('${log.id}')">削除</button></td>`;
+                    logTableBody.appendChild(row);
+                });
+            }
         }
     }
 </script>
