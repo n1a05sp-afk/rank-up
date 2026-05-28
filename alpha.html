@@ -208,6 +208,7 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
 
+        /* 🌟 3つのタブが綺麗にスマホに収まるように幅を調整 */
         .tab-item {
             flex: 1;
             display: flex;
@@ -216,7 +217,7 @@
             justify-content: center;
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             background: none;
             border: none;
@@ -234,13 +235,8 @@
             text-shadow: 0 0 5px rgba(255,153,0,0.4);
         }
 
-        .tab-item.gear-tab.active {
-            color: var(--gear-color);
-            text-shadow: 0 0 5px rgba(168,85,247,0.4);
-        }
-
         .tab-icon {
-            font-size: 18px;
+            font-size: 20px;
             margin-bottom: 4px;
         }
 
@@ -287,6 +283,17 @@
             text-align: center;
             margin-bottom: 5px;
             font-weight: bold;
+        }
+
+        /* 🌟 開閉アコーディオン用のスタイル */
+        .hidden-setting-container {
+            display: none;
+            margin-top: 25px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 
@@ -519,37 +526,34 @@
                 プレイヤーを選択するとここに計算結果がリアルタイム表示されます。
             </div>
         </div>
-    </div>
-</div>
 
-<div id="page-master" class="app-page">
-    <div class="card" style="border-color: var(--gear-color);">
-        <h2 style="color: var(--gear-color);">⚙️ レベル別プライズ表設定</h2>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top:-10px; margin-bottom:15px;">
-            緊急で支給基準数値を変更したい場合はここを書き換えて「設定を保存」を押してください。（全端末へ同期されます）
-        </p>
+        <button type="button" class="secondary" style="margin-top:30px; border-color:var(--border-color); color:var(--text-muted); font-size:13px; padding:10px;" onclick="toggleMasterSettings()">
+            ⚙️ 管理者向けマスタ設定を編集する (開閉)
+        </button>
 
-        <div class="master-header">
-            <div>対象レベル</div>
-            <div>1位ベース</div>
-            <div>2位ベース</div>
-            <div>3位ベース</div>
+        <div id="hidden-master-section" class="hidden-setting-container">
+            <div class="card" style="border-color: var(--gear-color); padding: 15px; margin-bottom: 15px;">
+                <h3 style="color: var(--gear-color); margin-top:0; font-size:15px;">⚙️ レベル別プライズ表設定</h3>
+                <div class="master-header">
+                    <div>対象レベル</div>
+                    <div>1位ベース</div>
+                    <div>2位ベース</div>
+                    <div>3位ベース</div>
+                </div>
+                <div id="master-inputs-container"></div>
+                <button type="button" style="background-color: var(--gear-color); color:#fff; margin-top:15px; padding:10px; font-size:14px;" onclick="saveCustomMasterFromUI()">
+                    💾 この数値で設定を保存・同期
+                </button>
+                <button type="button" class="secondary" style="margin-top:10px; border-color:var(--gear-color); color:#fff; padding:10px; font-size:14px;" onclick="resetMasterToDefault()">
+                    🔄 設定数値を公式の初期値に戻す
+                </button>
+            </div>
+
+            <div class="card" style="border-color: var(--danger-color); padding: 15px;">
+                <h3 style="color: var(--danger-color); margin-top:0; font-size:14px;">⚠️ サーバーデータ一括リセット</h3>
+                <button class="action-btn delete" style="width: 100%; padding: 12px; margin: 0; font-size: 14px;" onclick="clearAllData()">サーバーの全データをリセット</button>
+            </div>
         </div>
-
-        <div id="master-inputs-container"></div>
-
-        <button type="button" style="background-color: var(--gear-color); color:#fff; margin-top:15px;" onclick="saveCustomMasterFromUI()">
-            💾 この数値で設定を保存・同期
-        </button>
-
-        <button type="button" class="secondary" style="margin-top:10px; border-color:var(--gear-color); color:#fff;" onclick="resetMasterToDefault()">
-            🔄 設定数値を公式の初期値に戻す
-        </button>
-    </div>
-
-    <div class="card" style="border-color: var(--danger-color); margin-top:30px;">
-        <h2 style="color: var(--danger-color); font-size:15px;">⚠️ サーバーデータ一括リセット</h2>
-        <button class="action-btn delete" style="width: 100%; padding: 14px; margin: 0; font-size: 15px;" onclick="clearAllData()">サーバーの全データをリセット</button>
     </div>
 </div>
 
@@ -562,13 +566,9 @@
         <div class="tab-icon">🎯</div>
         <div>KO記録</div>
     </button>
-    <button class="tab-item" id="tab-prize" onclick="switchPage('prize')">
+    <button class="tab-item prize-tab" id="tab-prize" onclick="switchPage('prize')">
         <div class="tab-icon">🏆</div>
         <div>プライズ</div>
-    </button>
-    <button class="tab-item gear-tab" id="tab-master" onclick="switchPage('master')">
-        <div class="tab-icon">⚙️</div>
-        <div>設定</div>
     </button>
 </div>
 
@@ -589,16 +589,31 @@
         document.getElementById('page-register').classList.remove('active');
         document.getElementById('page-ko').classList.remove('active');
         document.getElementById('page-prize').classList.remove('active');
-        document.getElementById('page-master').classList.remove('active');
         document.getElementById('tab-register').classList.remove('active');
         document.getElementById('tab-ko').classList.remove('active');
         document.getElementById('tab-prize').classList.remove('active');
-        document.getElementById('tab-master').classList.remove('active');
 
         if (pageName === 'register') { document.getElementById('page-register').classList.add('active'); document.getElementById('tab-register').classList.add('active'); } 
         else if (pageName === 'ko') { document.getElementById('page-ko').classList.add('active'); document.getElementById('tab-ko').classList.add('active'); renderSelectOptions(); } 
-        else if (pageName === 'prize') { document.getElementById('page-prize').classList.add('active'); document.getElementById('tab-prize').classList.add('active'); renderPrizeSelectOptions(); } 
-        else if (pageName === 'master') { document.getElementById('page-master').classList.add('active'); document.getElementById('tab-master').classList.add('active'); renderMasterSettingsUI(); }
+        else if (pageName === 'prize') { 
+            document.getElementById('page-prize').classList.add('active'); 
+            document.getElementById('tab-prize').classList.add('active'); 
+            renderPrizeSelectOptions(); 
+            renderMasterSettingsUI(); // マスタUIもプライズロード時に生成
+        }
+    }
+
+    // 🌟 アコーディオンの開閉スイッチ
+    function toggleMasterSettings() {
+        const section = document.getElementById('hidden-master-section');
+        if (section.style.display === 'block') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+            renderMasterSettingsUI();
+            // 入力欄が見えやすいように少し下に自動スクロール
+            setTimeout(() => { section.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+        }
     }
 
     function savePlayer(event) {
@@ -643,11 +658,7 @@
                         String(now.getMinutes()).padStart(2, '0') + ':' + 
                         String(now.getSeconds()).padStart(2, '0');
 
-        const logData = { 
-            killerId: killerId, 
-            victimId: victimId,
-            time: timeStr
-        };
+        const logData = { killerId: killerId, victimId: victimId, time: timeStr };
         
         if (editingId) {
             const oldLog = window.logs.find(l => l.id === editingId);
@@ -739,6 +750,10 @@
     function renderMasterSettingsUI() {
         const container = document.getElementById('master-inputs-container');
         if (!container || !window.customMaster) return;
+        
+        // 既に入力中の中身を破壊しないよう、中身が空の時だけ自動生成する
+        if(container.children.length > 0) return;
+
         container.innerHTML = "";
         window.customMaster.forEach((m, idx) => {
             const row = document.createElement('div'); row.className = "master-row";
@@ -757,7 +772,12 @@
     }
 
     function resetMasterToDefault() {
-        if (confirm("本当にレベル別プライズ表の数値を【公式の初期値】に戻しますか？")) { window.dbSaveCustomMaster(window.DEFAULT_MASTER); alert("公式の初期設定数値にリセット・同期しました！"); }
+        if (confirm("本当にレベル別プライズ表の数値を【公式の初期値】に戻しますか？")) { 
+            // 画面のインプットコンテナを一度空にして再生成を促す
+            document.getElementById('master-inputs-container').innerHTML = "";
+            window.dbSaveCustomMaster(window.DEFAULT_MASTER); 
+            alert("公式の初期設定数値にリセット・同期しました！"); 
+        }
     }
 
     function calculateFinalPrizes() {
@@ -810,8 +830,6 @@
                 [...window.logs].reverse().forEach(log => {
                     const killer = window.players.find(p => p.id === log.killerId); const victim = window.players.find(p => p.id === log.victimId);
                     const kText = killer ? `${killer.name}(${killer.level})` : '不明'; const vText = victim ? `${victim.name}(${victim.level})` : '不明'; const isBonus = killer && victim && killer.level < victim.level;
-                    
-                    // 🌟 タイムログを2行目の矢印の横（目立たないグレー）へ配置引っ越し
                     const timeLabel = log.time ? `<span style="color:var(--text-muted); font-size:11px; margin-right:8px; font-weight:normal;">${log.time}</span>` : '';
 
                     const row = document.createElement('tr');
@@ -820,11 +838,16 @@
                 });
             }
         }
-        calculateFinalPrizes()
+        calculateFinalPrizes();
     }
 
     function clearAllData() {
-        if (confirm("本当に【サーバーの全データ】をリセットしますか？")) { window.dbClearAll(); cancelPlayerEditMode(); cancelEditMode(); }
+        if (confirm("本当に【サーバーの全データ】をリセットしますか？\n他のスタッフの画面からも同時に消去されます。")) { 
+            window.dbClearAll(); 
+            cancelPlayerEditMode(); 
+            cancelEditMode(); 
+            document.getElementById('hidden-master-section').style.display = 'none';
+        }
     }
 </script>
 </body>
