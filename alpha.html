@@ -208,7 +208,6 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* 🌟 3つのタブが綺麗にスマホに収まるように幅を調整 */
         .tab-item {
             flex: 1;
             display: flex;
@@ -285,7 +284,6 @@
             font-weight: bold;
         }
 
-        /* 🌟 開閉アコーディオン用のスタイル */
         .hidden-setting-container {
             display: none;
             margin-top: 25px;
@@ -324,7 +322,7 @@
             { min: 90,  max: 99,  rank1: 10800, rank2: 6300, rank3: 4500 },
             { min: 80,  max: 89,  rank1: 9600,  rank2: 5600, rank3: 4000 },
             { min: 70,  max: 79,  rank1: 8400,  rank2: 4900, rank3: 3500 },
-            { min: 60,  max: 69,  rank1: 7200,  rank2: 4200, rank3: 3000 },
+            { min: 60,  max: 69,  rank1: 7200,  border2: 4200, rank3: 3000 },
             { min: 50,  max: 59,  rank1: 6000,  rank2: 3500, rank3: 2500 },
             { min: 40,  max: 49,  rank1: 4800,  rank2: 2800, rank3: 2000 },
             { min: 30,  max: 39,  rank1: 3600,  rank2: 2100, rank3: 1500 },
@@ -599,11 +597,10 @@
             document.getElementById('page-prize').classList.add('active'); 
             document.getElementById('tab-prize').classList.add('active'); 
             renderPrizeSelectOptions(); 
-            renderMasterSettingsUI(); // マスタUIもプライズロード時に生成
+            renderMasterSettingsUI();
         }
     }
 
-    // 🌟 アコーディオンの開閉スイッチ
     function toggleMasterSettings() {
         const section = document.getElementById('hidden-master-section');
         if (section.style.display === 'block') {
@@ -611,7 +608,6 @@
         } else {
             section.style.display = 'block';
             renderMasterSettingsUI();
-            // 入力欄が見えやすいように少し下に自動スクロール
             setTimeout(() => { section.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
         }
     }
@@ -750,8 +746,6 @@
     function renderMasterSettingsUI() {
         const container = document.getElementById('master-inputs-container');
         if (!container || !window.customMaster) return;
-        
-        // 既に入力中の中身を破壊しないよう、中身が空の時だけ自動生成する
         if(container.children.length > 0) return;
 
         container.innerHTML = "";
@@ -773,7 +767,6 @@
 
     function resetMasterToDefault() {
         if (confirm("本当にレベル別プライズ表の数値を【公式の初期値】に戻しますか？")) { 
-            // 画面のインプットコンテナを一度空にして再生成を促す
             document.getElementById('master-inputs-container').innerHTML = "";
             window.dbSaveCustomMaster(window.DEFAULT_MASTER); 
             alert("公式の初期設定数値にリセット・同期しました！"); 
@@ -787,12 +780,26 @@
         let resultsHtml = "";
         const positions = [{ label: "🥇 1位", winnerId: conf.winner1, rankNum: 1 }, { label: "🥈 2位", winnerId: conf.winner2, rankNum: 2 }, { label: "🥉 3位", winnerId: conf.winner3, rankNum: 3 }];
         let selectionCount = 0;
+        
         positions.forEach(pos => {
             if (pos.winnerId) {
-                selectionCount++; const pInfo = window.players.find(p => p.id === pos.winnerId); const pStats = globalPlayerStats[pos.winnerId] || { bonus: 0 };
+                selectionCount++; 
+                const pInfo = window.players.find(p => p.id === pos.winnerId); 
+                const pStats = globalPlayerStats[pos.winnerId] || { bonus: 0 };
+                
                 if (pInfo) {
-                    const basePrize = getBasePrize(pInfo.level, pos.rankNum); const bonusRate = pStats.bonus / 100; const finalPrize = Math.round(basePrize * (1 + bonusRate));
-                    resultsHtml += `<div style="margin-bottom:12px; border-bottom:1px solid #2e3d56; padding-bottom:8px;"><strong>${pos.label}: ${pInfo.name}</strong> (Lv.${pInfo.level})<br><span style="font-size:12px; color:var(--text-muted);">↳ 基準値: ${basePrize} / ボーナス: +${pStats.bonus}%</span><br>➔ <span style="color:var(--warning-color); font-weight:800; font-size:18px;">${finalPrize.toLocaleString()}</span></div>`;
+                    const basePrize = getBasePrize(pInfo.level, pos.rankNum);
+                    let bonusRate = pStats.bonus / 100;
+                    let finalPrize = Math.round(basePrize * (1 + bonusRate));
+                    let noteText = `基準値: ${basePrize} / ボーナス: +${pStats.bonus}%`;
+
+                    // 🌟【重要】レベル100以上の人が1位になった場合は、%を完全に無視して12000固定（上限ストッパー）
+                    if (pos.rankNum === 1 && pInfo.level >= 100) {
+                        finalPrize = basePrize; // マスタに登録されたベース値（初期値12,000）を強制適用
+                        noteText = `レベル100以上のためボーナス不適用 (上限12,000固定)`;
+                    }
+
+                    resultsHtml += `<div style="margin-bottom:12px; border-bottom:1px solid #2e3d56; padding-bottom:8px;"><strong>${pos.label}: ${pInfo.name}</strong> (Lv.${pInfo.level})<br><span style="font-size:12px; color:var(--text-muted);">↳ ${noteText}</span><br>➔ <span style="color:var(--warning-color); font-weight:800; font-size:18px;">${finalPrize.toLocaleString()}</span></div>`;
                 }
             }
         });
